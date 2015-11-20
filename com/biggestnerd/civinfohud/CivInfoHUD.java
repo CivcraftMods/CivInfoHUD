@@ -1,6 +1,7 @@
 package com.biggestnerd.civinfohud;
 
 import java.awt.Color;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,6 +9,7 @@ import org.lwjgl.opengl.GL11;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -22,8 +24,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 public class CivInfoHUD {
 
 	private Minecraft mc;
-	private int fps, ping = 0;
-	private double tps = 0;
+	private int fps, ping, tps = 0;
 	private Pattern tpsPattern = Pattern.compile("^TPS from last 1m, 5m, 15m: [*]?([0-9]+).*$");
 	private long lastCheck = 0;
 	
@@ -36,7 +37,7 @@ public class CivInfoHUD {
 	
 	@SubscribeEvent
 	public void onTick(ClientTickEvent event) {
-		if(mc.theWorld != null && (System.currentTimeMillis() - lastCheck > 30000)) {
+		if(mc.theWorld != null && (System.currentTimeMillis() - lastCheck > 60000)) {
 			mc.thePlayer.sendChatMessage("/tps");
 			lastCheck = System.currentTimeMillis();
 		}
@@ -69,6 +70,10 @@ public class CivInfoHUD {
 			mc.fontRendererObj.drawStringWithShadow("TPS: " + tps, horizOffset, res.getScaledHeight() - vertOffset, c.getRGB());
 			
 			horizOffset += mc.fontRendererObj.getStringWidth("TPS: " + tps + " ");
+			NetworkPlayerInfo info = mc.thePlayer.sendQueue.getPlayerInfo(mc.thePlayer.getPersistentID());
+			if(info != null) {
+				ping = info.getResponseTime();
+			}
 			c = Color.GREEN;
 			if(ping > 150) {
 				c = Color.YELLOW;
@@ -86,7 +91,8 @@ public class CivInfoHUD {
 		String msg = event.message.getUnformattedText();
 		Matcher tpsMatcher = tpsPattern.matcher(msg);
 		while(tpsMatcher.find()) {
-			tps = Double.parseDouble(tpsMatcher.group(1));
+			tps = Integer.parseInt(tpsMatcher.group(1));
+			event.setCanceled(true);
 		}
 	}
 }
