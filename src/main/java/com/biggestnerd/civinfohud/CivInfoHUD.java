@@ -1,7 +1,6 @@
 package com.biggestnerd.civinfohud;
 
 import java.awt.Color;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,7 +12,6 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -32,7 +30,6 @@ public class CivInfoHUD {
 	public void preInit(FMLPreInitializationEvent event) {
 		mc = Minecraft.getMinecraft();
 		MinecraftForge.EVENT_BUS.register(this);
-		FMLCommonHandler.instance().bus().register(this);
 	}
 	
 	@SubscribeEvent
@@ -45,8 +42,8 @@ public class CivInfoHUD {
 	
 	@SubscribeEvent
 	public void onRenderGameOverlay(RenderGameOverlayEvent event) {
-		if(event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
-			ScaledResolution res = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+		if(event.getType() == RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
+			ScaledResolution res = new ScaledResolution(mc);
 			int vertOffset = mc.fontRendererObj.FONT_HEIGHT + 2;
 			int horizOffset = 10;
 			fps = mc.getDebugFPS();
@@ -70,7 +67,7 @@ public class CivInfoHUD {
 			mc.fontRendererObj.drawStringWithShadow("TPS: " + tps, horizOffset, res.getScaledHeight() - vertOffset, c.getRGB());
 			
 			horizOffset += mc.fontRendererObj.getStringWidth("TPS: " + tps + " ");
-			NetworkPlayerInfo info = mc.thePlayer.sendQueue.getPlayerInfo(mc.thePlayer.getPersistentID());
+			NetworkPlayerInfo info = mc.thePlayer.connection.getPlayerInfo(mc.thePlayer.getUniqueID());
 			if(info != null) {
 				ping = info.getResponseTime();
 			}
@@ -88,7 +85,7 @@ public class CivInfoHUD {
 	
 	@SubscribeEvent
 	public void onChat(ClientChatReceivedEvent event) {
-		String msg = event.message.getUnformattedText();
+		String msg = event.getMessage().getUnformattedText();
 		Matcher tpsMatcher = tpsPattern.matcher(msg);
 		while(tpsMatcher.find()) {
 			tps = Integer.parseInt(tpsMatcher.group(1));
